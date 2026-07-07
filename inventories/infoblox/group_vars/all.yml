@@ -6,7 +6,7 @@ nios_provider:
   host: "{{ nios_host }}"
   username: "{{ nios_username }}"
   password: "{{ nios_password }}"
-  ssl_verify: "{{ nios_ssl_verify | default(false) }}"
+  validate_certs: "{{ nios_ssl_verify | default(false) }}"
   wapi_version: "{{ nios_wapi_version | default('2.1') }}"
 
 # A record defaults – override via AWX job template survey or extra vars
