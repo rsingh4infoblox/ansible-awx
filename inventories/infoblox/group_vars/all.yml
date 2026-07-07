@@ -1,0 +1,16 @@
+---
+# Infoblox NIOS connection provider
+# nios_host, nios_username, nios_password are injected by the AWX
+# "Infoblox NIOS" custom credential type (see awx/credential_type.yml).
+nios_provider:
+  host: "{{ nios_host }}"
+  username: "{{ nios_username }}"
+  password: "{{ nios_password }}"
+  ssl_verify: "{{ nios_ssl_verify | default(false) }}"
+  wapi_version: "{{ nios_wapi_version | default('2.1') }}"
+
+# A record defaults – override via AWX job template survey or extra vars
+dns_view: "default"
+record_ttl: 3600
+record_state: present
+record_comment: "Managed by Ansible AWX"

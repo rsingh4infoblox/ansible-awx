@@ -1,0 +1,41 @@
+---
+- name: Create DNS A record in Infoblox NIOS
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  # Variables below are expected from one of:
+  #   - AWX custom credential type "Infoblox NIOS"  (nios_host/username/password)
+  #   - AWX Job Template survey                      (record_name, record_ipv4addr)
+  #   - AWX Job Template extra vars
+
+  tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - nios_host is defined and nios_host | length > 0
+          - nios_username is defined and nios_username | length > 0
+          - nios_password is defined and nios_password | length > 0
+          - record_name is defined and record_name | length > 0
+          - record_ipv4addr is defined and record_ipv4addr | length > 0
+        fail_msg: >
+          Missing required variables. Ensure nios_host, nios_username,
+          nios_password, record_name, and record_ipv4addr are all set.
+
+    - name: Create A record
+      infoblox.nios_modules.nios_a_record:
+        name: "{{ record_name }}"
+        ipv4addr: "{{ record_ipv4addr }}"
+        view: "{{ dns_view | default('default') }}"
+        comment: "{{ record_comment | default('Managed by Ansible AWX') }}"
+        ttl: "{{ record_ttl | default(3600) }}"
+        state: "{{ record_state | default('present') }}"
+        provider: "{{ nios_provider }}"
+      register: nios_result
+
+    - name: Show result
+      ansible.builtin.debug:
+        msg: >
+          A record '{{ record_name }}' -> '{{ record_ipv4addr }}'
+          {{ (record_state | default('present') == 'present') | ternary('created/updated', 'removed') }}
+          in view '{{ dns_view | default('default') }}'.
