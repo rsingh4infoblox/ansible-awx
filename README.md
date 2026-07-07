@@ -6,8 +6,10 @@ Playbooks for managing Infoblox DNS A records using the `infoblox.nios_modules` 
 
 ```
 ├── ansible.cfg
+├── execution-environment.yml     # ansible-builder definition (includes infoblox-client)
+├── requirements.txt              # Python deps: infoblox-client
 ├── collections/
-│   └── requirements.yml          # AWX installs infoblox.nios_modules automatically
+│   └── requirements.yml          # Ansible collection: infoblox.nios_modules
 ├── inventories/
 │   └── infoblox/
 │       ├── hosts.yml             # localhost (NIOS uses REST API, not SSH)
@@ -20,6 +22,27 @@ Playbooks for managing Infoblox DNS A records using the `infoblox.nios_modules` 
 ```
 
 ## AWX setup (one-time)
+
+### 0. Build and push a custom Execution Environment
+
+The `infoblox.nios_modules` collection requires the `infoblox-client` Python package, which is not present in the default AWX EE. Build a custom one with `ansible-builder`:
+
+```bash
+pip install ansible-builder
+
+# Build the image (from repo root)
+ansible-builder build \
+  --file execution-environment.yml \
+  --tag your-registry/infoblox-ee:latest \
+  --container-runtime docker
+
+# Push to your registry
+docker push your-registry/infoblox-ee:latest
+```
+
+Then in AWX go to **Administration → Execution Environments → Add** and register the image.
+
+Set that EE on the Job Template (step 4 below).
 
 ### 1. Create a custom credential type
 
@@ -95,14 +118,16 @@ Add a **Survey** with:
 ## Running locally (without AWX)
 
 ```bash
-pip install ansible
+pip install ansible infoblox-client
 ansible-galaxy collection install -r collections/requirements.yml
 
 ansible-playbook playbooks/create_a_record.yml \
   -i inventories/infoblox/hosts.yml \
-  -e nios_host=192.168.1.2 \
+  -e nios_host=172.28.83.22 \
   -e nios_username=admin \
   -e nios_password=infoblox \
   -e record_name=myhost.example.com \
   -e record_ipv4addr=10.0.0.100
 ```
+
+> **Note:** `nios_host` is the bare IP or hostname — no `https://` prefix.
