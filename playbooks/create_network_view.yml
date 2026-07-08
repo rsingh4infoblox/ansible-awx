@@ -1,0 +1,36 @@
+---
+- name: Create Network View in Infoblox NIOS
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  # Variables expected from:
+  #   - AWX custom credential type "Infoblox NIOS"  (nios_host/username/password)
+  #   - AWX Job Template survey                      (network_view_name)
+  #   - AWX Job Template extra vars
+
+  tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - nios_host is defined and nios_host | length > 0
+          - nios_username is defined and nios_username | length > 0
+          - nios_password is defined and nios_password | length > 0
+          - network_view_name is defined and network_view_name | length > 0
+        fail_msg: >
+          Missing required variables. Ensure nios_host, nios_username,
+          nios_password, and network_view_name are all set.
+
+    - name: Create network view
+      infoblox.nios_modules.nios_network_view:
+        name: "{{ network_view_name }}"
+        comment: "{{ network_view_comment | default('Managed by Ansible AWX') }}"
+        state: "{{ network_view_state | default('present') }}"
+        provider: "{{ nios_provider }}"
+      register: nios_result
+
+    - name: Show result
+      ansible.builtin.debug:
+        msg: >
+          Network view '{{ network_view_name }}'
+          {{ (network_view_state | default('present') == 'present') | ternary('created/updated', 'removed') }}.
